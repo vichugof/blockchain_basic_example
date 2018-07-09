@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Blockchain Client Simulate</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="/static/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link href="/static/css/custom.css" rel="stylesheet">
+
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="#">Blockchain Client</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive"
+                aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarResponsive">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item active">
+                        <a class="nav-link" href="/simulate">Sumilate
+                            <span class="sr-only">(current)</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/make/transaction">Make Transaction</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/view/transactions">View Transactions</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid list-nodes">
+        <div class="row">
+            <div class="col-lg-4 node-0">
+                <div class="card-body">
+                    <h4 class="card-title">Node 1</h4>
+                </div>
+                <div class="col-lg-12 container-node">
+                    
+                </div>
+            </div>
+            <div class="col-lg-4 node-1">
+                <div class="card-body">
+                    <h4 class="card-title">Node 2</h4>
+                </div>
+                <div class="col-lg-12 container-node">
+                    
+                </div>
+            </div>
+            <div class="col-lg-4 node-2">
+                <div class="card-body">
+                    <h4 class="card-title">Node 3</h4>
+                </div>
+                <div class="col-lg-12 container-node">
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/vendor/jquery/jquery.min.js"></script>
+    <script src="/static/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/blockchain.js"></script>
+    
+    <script>
+        $(function () {
+
+            var nodes = [
+                "http://172.18.0.2:5000",
+                "http://172.18.0.3:5000",
+                "http://172.18.0.4:5000"
+            ];
+
+            var nodeIdx = 0;
+            var maxIterate = 15;
+            var iterate = 0;
+
+            registerNodesClient(nodes[0], JSON.stringify({ "nodes": ["172.18.0.3:5000", "172.18.0.4:5000"]}));
+            registerNodesClient(nodes[1], JSON.stringify({ "nodes": ["172.18.0.2:5000", "172.18.0.4:5000"]}));
+            registerNodesClient(nodes[2], JSON.stringify({ "nodes": ["172.18.0.2:5000", "172.18.0.3:5000"]}));
+            console.log('START ==================>');
+            var timerMine = setInterval(function() {
+                var userAddress1 = 'user-address-' + Math.floor((Math.random() * 10000) + 1);
+                var userAddress2 = 'user-address-' + Math.floor((Math.random() * 10000) + 1);
+                var amount = Math.floor((Math.random() * 50) + 1);
+                nodeIdx = Math.floor((Math.random() * 3));
+                iterate++;
+
+                var data = {
+                    sender: userAddress1,
+                    recipient: userAddress2,
+                    amount: amount
+                };
+                
+                if (iterate < maxIterate) {
+                    confirmTransactionsClient(nodes, nodeIdx, data, true);
+                    // confirmTransactionsClient(nodes[nodeIdx], data, true);
+
+                    // var timerResolve = setTimeout(function () {
+                    //     for (var idx = 0; idx < nodes.length; idx++) {
+                    //         if (idx != nodeIdx) {
+                    //             resolveNodeClient(nodes[nodeIdx]);
+                    //         }
+                    //     }
+                    // }, 4000);
+                }
+ 
+            }, 7000);
+            
+            var timerShow = setInterval(function () {
+                for (var idx = 0; idx < nodes.length; idx++) {
+                    //viewTransactionsProcessedClient(nodes[idx], idx);
+                    var timerTransactionsProcessed = setTimeout(viewTransactionsProcessedClient, idx*1000, nodes[idx], idx);
+                }
+            }, 4000);
+        });
+
+        var viewTransactionsProcessedClient = function (node_url, idx_node) {
+
+            var $title = $(".list-nodes .node-" + idx_node + " .card-title");
+            $title.addClass('current');
+
+            $.ajax({
+                url: node_url + "/chain_detail",
+                type: 'GET',
+                success: function (response) {
+
+                    console.log(response);
+                    //Generate Transactions Table
+                    var transactions = [];
+                    var blocks = [];
+                    count = 1;
+
+                    for (i = 0; i < response.length; i++) {
+                        block = {
+                            'count': i,
+                            'hash': response["chain"][i]["hash"],
+                            'previous_hash': response["chain"][i]["previous_hash"],
+                            'transactions': response["chain"][i]["transactions"].length,
+                            'time': formattedDateTime,
+                            'block': response["chain"][i]["index"]
+                        };
+                        blocks.push(block);
+
+                        for (j = 0; j < response["chain"][i]["transactions"].length && i > 0; j++) {
+
+                            //format date 
+                            var options = { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" };
+                            var date = new Date(response["chain"][i]["timestamp"] * 1000);
+                            var formattedDateTime = date.toLocaleTimeString("en-us", options);
+
+                            transaction = {
+                                'count': count,
+                                'hash': response["chain"][i]["hash"],
+                                'previous_hash': response["chain"][i]["previous_hash"],
+                                'recipient': response["chain"][i]["transactions"][j]["recipient"],
+                                'sender': response["chain"][i]["transactions"][j]["sender"],
+                                'amount': response["chain"][i]["transactions"][j]["amount"],
+                                'time': formattedDateTime,
+                                'block': response["chain"][i]["index"]
+                            };
+                            transactions.push(transaction);
+
+                            count += 1;
+                        };
+                    };
+                    console.log(node_url, 'transactions', transactions);
+                    
+                    // renderTransactions(transactions, idx_node);
+                    renderBlocks(blocks, idx_node);
+
+                    // $title.removeClass('current');
+                    setTimeout(function () {
+                        $title.removeClass('current');
+                    }, 500);
+                },
+                error: function (error) {
+                    console.log(error);
+                }
+            });
+        };
+
+        var renderBlocks = function (blocks, idx_node) {
+            var $container = $(".list-nodes .node-" + idx_node + " .container-node");
+            $container.empty();
+            for (var idx = 0; idx < blocks.length; idx++) {
+                //console.log(idx);
+                $container.append(
+                    '<div class="transaction">\
+                        <ul class="list-group list-group-flush">\
+                            <li class="list-group-item">\
+                                <b>prev_hash</b>: <span class="previous_hash">'+ blocks[idx].previous_hash.substring(0, 15) + '</span> <i class="fa fa-arrow-up"></i>\
+                            </li>\
+                            <li class="list-group-item">\
+                                <b># transactions</b>: <span class="transactions">'+ blocks[idx].transactions + '</span>\
+                            </li>\
+                            <li class="list-group-item">\
+                                <b>time</b>: <span class="time">'+ blocks[idx].time + '</span>\
+                            </li>\
+                            <li class="list-group-item">\
+                                <b>block</b>: <span class="block">'+ blocks[idx].block + '</span>\
+                            </li>\
+                            <li class="list-group-item">\
+                                <b>curr_hash</b>: <span class="hash">'+ blocks[idx].hash.substring(0, 15) + '</span>  <i class="fa fa-arrow-down"></i>\
+                            </li>\
+                        </ul>\
+                    </div>'
+                );
+            }
+        };
+
+        var renderTransactions = function (transactions, idx_node) {
+            var $container = $(".list-nodes .node-" + idx_node + " .container-node");
+            $container.empty();
+            for (var idx = 0; idx < transactions.length; idx++) {
+                //console.log(idx);
+                $container.append(
+                    '<div class="transaction">\
+                            <ul class="list-group list-group-flush">\
+                                <li class="list-group-item">\
+                                    <b>sender</b>: <span class="sender">'+ transactions[idx].sender + '</span>\
+                                </li>\
+                                <li class="list-group-item">\
+                                    <b>recipient</b>: <span class="recipient">'+ transactions[idx].recipient + '</span>\
+                                </li>\
+                                <li class="list-group-item">\
+                                    <b>amount</b>: <span class="amount">'+ transactions[idx].amount + '</span>\
+                                </li>\
+                                <li class="list-group-item">\
+                                    <b>time</b>: <span class="time">'+ transactions[idx].time + '</span>\
+                                </li>\
+                                <li class="list-group-item">\
+                                    <b>block</b>: <span class="block">'+ transactions[idx].block + '</span>\
+                                </li>\
+                            </ul>\
+                        </div>'
+                );
+            }
+        };
+    </script>
+        
+    </body>
+        
+</html>

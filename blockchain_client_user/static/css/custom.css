@@ -1,0 +1,32 @@
+body {
+	padding-top: 54px;
+}
+
+.container-node .transaction .list-group .list-group-item .hash {
+	color: red;
+}
+
+.container-node .transaction .list-group .list-group-item .previous_hash {
+	color: blue;
+}
+
+.container-node .transaction {
+	border-style: solid;
+	border-width: 2px;
+	margin-top: 5px;
+}
+
+.list-nodes .node-0 .card-title,
+.list-nodes .node-1 .card-title,
+.list-nodes .node-2 .card-title {
+	font-size: 32px;
+	font-weight: 800;
+}
+
+.list-nodes .node-0 .card-title.current,
+.list-nodes .node-1 .card-title.current,
+.list-nodes .node-2 .card-title.current {
+	font-size: 32px;
+	font-weight: 800;
+	color: green;
+}
